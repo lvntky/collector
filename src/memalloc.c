@@ -2,84 +2,88 @@
 #include <unistd.h>
 #include <assert.h>
 
-/*meta information of heap*/
-/*track the size of chunk for free*/
-/*whether occupied or not*/
-typedef struct block_meta {
+typedef struct block_meta
+{
   size_t size;
-  struct block_meta* next;
+  struct block_meta *next;
   int free;
-  int debug_it; // debug purpose only. delete it.
+  // debug
+  int magic;
 } block_meta;
-#define META_SIZE sizeof(struct block_meta) // size of meta information block
 
-void* global_head = NULL; // head of block linkedList
+#define META_SIZE sizeof(block_meta)
+void *global_head = NULL;
 
-/*check is there any available freespace*/
-/*is not, request it from OS*/
-block_meta *find_available_block(block_meta **last, size_t size) {
-  block_meta* current = global_head;
-  while (current && !(current->free && current->size >= size)) {
+block_meta *find_free_block(block_meta **last, size_t size)
+{
+  block_meta *current = global_head;
+  // search until current chunk of memory is not free
+  // and not big as required size.
+  // if the chunk is free and big enough(found the block) or current chunk hit the NULL (not found the block)
+  // break the loop.
+  while(current && !(current->free && current->size >= size)) {
     *last = current;
-    current = current -> next;
-      }
+    current = current->next;
+  }
   return current;
 }
 
-/*if find_available_block returns null and can't find
- any available free space, request it from OS and add tail of LL*/
-block_meta *request_space_from_os(block_meta *last, size_t size) {
-  block_meta*  block;
-  block = sbrk(0); // current adress of heap's end.
-  void* request = sbrk(size + META_SIZE);
-  assert((void *)block == request); // NOT THREAD SAFE
-  if (request == (void *) -1) {
-    return NULL; // sbrk failed
-      }
-  // last should be NULL from first call. 
-  if (last) {
+// if find_free_block returns NULL
+// (can't find any block that matching the criterias)
+// request space from OS via sbrk syscall
+block_meta *request_block(block_meta *last, size_t size)
+{
+  block_meta *block;
+  block = sbrk(0); // sbrk(0) returns current break of the heap
+  void *request = sbrk(size + META_SIZE);
+  assert((void *)block == request);
+  if(request == ((void *)-1)) {
+    return NULL;
+  }
+  if(last){
     last->next = block;
-      }
+  }
   block->size = size;
   block->next = NULL;
-  block->free = 0; // occupied
-  block->debug_it = 0x12345678;
+  block->free = 0;
+  block->magic = 0x12345678;
+
   return block;
 }
 
-void *memalloc(size_t size) {
-  // TODO: aling pointers??
-  block_meta* block;
-  if (size <= 0) {
+void *memalloc(size_t size)
+{
+  block_meta *block;
+  if(size == 0) {
     return NULL;
-      }
+  }
   // first call
-  if (!global_head) {
-    block = request_space_from_os(NULL, size);
-    if (!block) {
+  if(global_head == NULL) {
+    block = request_block(NULL, size);
+    if(block == NULL) {
+      //sbrk failed
       return NULL;
-	}
+    }
     global_head = block;
-      } else {
+  } else {
     block_meta *last = global_head;
-    block = find_available_block(&last, size);
-    // failed to find free space
-    if (!block) {
-      block = request_space_from_os(last, size);
-      if (!block) {
+    block = find_free_block(&last, size);
+    if(block == NULL) {
+      block = request_block(last, size);
+      if(block == NULL) {
 	return NULL;
-	  }
-	} else {
-      // found free block
-      block->free = 0;
-      block->debug_it = 0x7777777;
-	}
+      } else { // found free block
+	block->free = 0;
+	block->magic = 0x7777777;
       }
-  return block;
+    }
+  }
+  return (block + 1);
 }
-
-
-int main(int argc, char **argv) {
-  memalloc(10);
+int main(int argc, char **argv)
+{
+  while(1) {
+    printf("%p\n", memalloc(999999999));
+  }
   return 0;
 }
