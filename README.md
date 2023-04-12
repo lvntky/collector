@@ -1,5 +1,5 @@
-https://img.shields.io/github/license/lvntky/collector
-https://img.shields.io/github/commit-activity/m/lvntky/collector
+
+![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/lvntky/collector)
 # Collector
 Collector is a simple mark and sweep, conservative garbage collector for C.
 
