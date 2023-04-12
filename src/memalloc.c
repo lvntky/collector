@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdio.h>
 
 typedef struct block_meta
 {
@@ -80,10 +81,49 @@ void *memalloc(size_t size)
   }
   return (block + 1);
 }
+
+// TEST
+typedef  struct node {
+  int data;
+  struct node * next;
+} node;
+node *ll_head = NULL;
+
+void insert_tail (int data) {
+  node *temp, *current;
+  temp = memalloc(sizeof(node));
+  temp ->data = data;
+  temp -> next = NULL;
+  if(ll_head == NULL) {
+    ll_head = temp;
+  }
+  else {
+    current = ll_head;
+    while(current->next != NULL) {
+      current = current -> next;
+    }
+    current -> next = temp;
+  }
+}
+
+void print_list() {
+  node* current = ll_head;
+  while(current != NULL) {
+    printf("%d --> ", current->data);
+    current = current->next;
+  }
+  printf("NULL");
+}
+
+// DRIVER
 int main(int argc, char **argv)
 {
-  while(1) {
-    printf("%p\n", memalloc(999999999));
+  int input;
+  while(input != -1) {
+    printf("data: ");
+    scanf("%d", &input);
+    insert_tail(input);
   }
+  print_list();
   return 0;
 }
