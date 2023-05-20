@@ -3,17 +3,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-
-typedef struct block_meta
-{
-  size_t size;
-  struct block_meta *next;
-  int free;
-  // debug
-  int magic;
-} block_meta;
-
+#include "../include/mamalloc.h"
 #define META_SIZE sizeof(block_meta)
+
 void *global_head = NULL;
 
 block_meta *find_free_block(block_meta **last, size_t size)
@@ -129,7 +121,8 @@ void *mem_realloc(void* ptr, size_t size)
 }
 
 // calloc - just wipe the memory before return pointer
-void *mem_calloc(size_t melem, size_t nelem) {
+void *mem_calloc(size_t melem, size_t nelem)
+{
   size_t size = melem * nelem;
   void *ptr = memalloc(size);
   memset(ptr, 0, size);
@@ -166,15 +159,4 @@ void print_linked_list() {
     current = current->next;
   }
   printf("NULL");
-}
-int main(int argc, char **argv)
-{
-  int val = 0;
-  while(val != -1) {
-    printf("data: ");
-    scanf("%d", &val);
-    insert_tail(val);
-  }
-  print_linked_list();
-  return 0;
 }
